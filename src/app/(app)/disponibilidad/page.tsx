@@ -1,11 +1,17 @@
 import { prisma } from "@/lib/prisma";
+import DisponibilidadForm from "@/components/DisponibilidadForm";
 
 export default async function DisponibilidadPage() {
-  const disponibilidades = await prisma.disponibilidad.findMany({
-    orderBy: { fecha: "desc" },
-    take: 50,
-    include: { planta: true, unidad: true, chofer: true },
-  });
+  const [disponibilidades, plantas, unidades, choferes] = await Promise.all([
+    prisma.disponibilidad.findMany({
+      orderBy: { fecha: "desc" },
+      take: 50,
+      include: { planta: true, unidad: true, chofer: true },
+    }),
+    prisma.planta.findMany({ orderBy: { nombre: "asc" } }),
+    prisma.unidad.findMany({ where: { activa: true }, orderBy: { patente: "asc" } }),
+    prisma.chofer.findMany({ where: { activo: true }, orderBy: { nombre: "asc" } }),
+  ]);
 
   return (
     <div>
@@ -17,9 +23,11 @@ export default async function DisponibilidadPage() {
             las 10hs.
           </p>
         </div>
-        <button className="bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-medium px-4 py-2 rounded-lg transition">
-          + Cargar disponibilidad
-        </button>
+        <DisponibilidadForm
+          plantas={plantas.map((p) => ({ id: p.id, label: p.nombre }))}
+          unidades={unidades.map((u) => ({ id: u.id, label: `${u.patente} · ${u.tipo}` }))}
+          choferes={choferes.map((c) => ({ id: c.id, label: c.nombre }))}
+        />
       </div>
 
       <div className="bg-neutral-900 border border-neutral-800 rounded-xl overflow-hidden">
