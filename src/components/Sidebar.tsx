@@ -1,8 +1,7 @@
 "use client";
-
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { signOut } from "next-auth/react";
+import { signOut, useSession } from "next-auth/react";
 
 const links = [
   { href: "/", label: "Panel" },
@@ -15,6 +14,8 @@ const links = [
 
 export default function Sidebar({ nombre, rol }: { nombre: string; rol: string }) {
   const pathname = usePathname();
+  const { data: session } = useSession();
+  const esAdmin = (session?.user as any)?.nivelAcceso === "ADMIN";
 
   return (
     <aside className="w-64 shrink-0 bg-neutral-950 border-r border-neutral-800 min-h-screen flex flex-col">
@@ -39,6 +40,22 @@ export default function Sidebar({ nombre, rol }: { nombre: string; rol: string }
             </Link>
           );
         })}
+
+        {esAdmin && (
+          <div className="mt-6 border-t border-neutral-800 pt-4">
+            <p className="px-3 text-xs uppercase tracking-wide text-neutral-500">Configuración</p>
+            <Link
+              href="/configuracion/usuarios"
+              className={`mt-2 block rounded-lg px-3 py-2 text-sm transition ${
+                pathname === "/configuracion/usuarios"
+                  ? "bg-emerald-600/15 text-emerald-400"
+                  : "text-neutral-400 hover:bg-neutral-900 hover:text-neutral-200"
+              }`}
+            >
+              Administración de Usuarios
+            </Link>
+          </div>
+        )}
       </nav>
       <div className="p-4 border-t border-neutral-800">
         <p className="text-sm text-neutral-300">{nombre}</p>
@@ -53,25 +70,3 @@ export default function Sidebar({ nombre, rol }: { nombre: string; rol: string }
     </aside>
   );
 }
-// Pegar esto dentro de tu Sidebar.tsx existente.
-// Asume que ya tenés acceso a la sesión (useSession de next-auth/react) dentro del componente.
-//
-// import { useSession } from "next-auth/react";
-// const { data: session } = useSession();
-// const esAdmin = (session?.user as any)?.nivelAcceso === "ADMIN";
-//
-// Y en el JSX, junto a los demás links del sidebar:
-
-/*
-{esAdmin && (
-  <div className="mt-6 border-t border-neutral-800 pt-4">
-    <p className="px-3 text-xs uppercase tracking-wide text-neutral-500">Configuración</p>
-    <Link
-      href="/configuracion/usuarios"
-      className="mt-2 block rounded px-3 py-2 text-sm text-neutral-300 hover:bg-neutral-800 hover:text-neutral-100"
-    >
-      Administración de Usuarios
-    </Link>
-  </div>
-)}
-*/
