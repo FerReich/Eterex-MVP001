@@ -4,12 +4,13 @@ import bcrypt from "bcryptjs";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
-export async function PATCH(req: Request, { params }: { params: { id: string } }) {
+export async function PATCH(req: Request, context: { params: Promise<{ id: string }> }) {
   const session = await auth();
   if (!session || (session.user as any).nivelAcceso !== "ADMIN") {
     return NextResponse.json({ error: "No autorizado" }, { status: 403 });
   }
 
+  const { id } = await context.params;
   const body = await req.json();
   const { nombre, rolFuncional, nivelAcceso, activo, password, permisos } = body;
 
@@ -20,15 +21,15 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   if (activo !== undefined) data.activo = activo;
   if (password) data.passwordHash = await bcrypt.hash(password, 10);
 
-  await prisma.usuario.update({ where: { id: params.id }, data });
+  await prisma.usuario.update({ where: { id }, data });
 
   // Si mandaron permisos nuevos, reemplazamos la matriz completa (mas simple que hacer diff)
   if (Array.isArray(permisos)) {
-    await prisma.permisoModulo.deleteMany({ where: { usuarioId: params.id } });
+    await prisma.permisoModulo.deleteMany({ where: { usuarioId: id } });
     if (permisos.length > 0) {
       await prisma.permisoModulo.createMany({
         data: permisos.map((p: { modulo: string; nivel: string }) => ({
-          usuarioId: params.id,
+          usuarioId: id,
           modulo: p.modulo as any,
           nivel: p.nivel as any,
         })),
@@ -39,15 +40,17 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   return NextResponse.json({ ok: true });
 }
 
-export async function DELETE(_req: Request, { params }: { params: { id: string } }) {
+export async function DELETE(_req: Request, context: { params: Promise<{ id: string }> }) {
   const session = await auth();
   if (!session || (session.user as any).nivelAcceso !== "ADMIN") {
     return NextResponse.json({ error: "No autorizado" }, { status: 403 });
   }
 
+  const { id } = await context.params;
+
   // Baja logica, no hard delete: evita romper el historial de viajes asignados por ese usuario.
   await prisma.usuario.update({
-    where: { id: params.id },
+    where: { id },
     data: { activo: false },
   });
 
