@@ -1,7 +1,12 @@
 // src/middleware.ts
-import { auth } from "@/lib/auth";
+// IMPORTANTE: importa authConfig (liviano), NO auth.ts (que trae Prisma+bcrypt).
+// Si esto se rompe, el bundle del middleware vuelve a pasar el 1MB de Vercel.
+import NextAuth from "next-auth";
 import { NextResponse } from "next/server";
+import { authConfig } from "@/lib/auth.config";
 import { moduloDeRuta, nivelEnModulo } from "@/lib/permisos";
+
+const { auth } = NextAuth(authConfig);
 
 const WRITE_METHODS = ["POST", "PUT", "PATCH", "DELETE"];
 
