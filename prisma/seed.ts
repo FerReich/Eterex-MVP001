@@ -13,7 +13,8 @@ async function main() {
       nombre: "Administrador",
       email: "admin@eterex.com",
       passwordHash,
-      rol: "ADMIN",
+      rolFuncional: "PLANIFICADOR",
+      nivelAcceso: "ADMIN",
     },
   });
 
@@ -52,8 +53,7 @@ async function main() {
     },
   });
 
-  console.log("Seed completo. Login: admin@eterex.com / eterex2026");
-  console.log(`Plantas creadas: ${plantaVG.nombre}, ${plantaCA.nombre}`);
+  console.log("Seed completo.");
 }
 
 main()
