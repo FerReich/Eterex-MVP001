@@ -53,3 +53,25 @@ export default function Sidebar({ nombre, rol }: { nombre: string; rol: string }
     </aside>
   );
 }
+// Pegar esto dentro de tu Sidebar.tsx existente.
+// Asume que ya tenés acceso a la sesión (useSession de next-auth/react) dentro del componente.
+//
+// import { useSession } from "next-auth/react";
+// const { data: session } = useSession();
+// const esAdmin = (session?.user as any)?.nivelAcceso === "ADMIN";
+//
+// Y en el JSX, junto a los demás links del sidebar:
+
+/*
+{esAdmin && (
+  <div className="mt-6 border-t border-neutral-800 pt-4">
+    <p className="px-3 text-xs uppercase tracking-wide text-neutral-500">Configuración</p>
+    <Link
+      href="/configuracion/usuarios"
+      className="mt-2 block rounded px-3 py-2 text-sm text-neutral-300 hover:bg-neutral-800 hover:text-neutral-100"
+    >
+      Administración de Usuarios
+    </Link>
+  </div>
+)}
+*/
