@@ -137,19 +137,19 @@ model Disponibilidad {
 }
 
 model Viaje {
-  id           String      @id @default(uuid())
-  fecha        DateTime
-  plantaId     String
-  planta       Planta      @relation(fields: [plantaId], references: [id])
-  unidadId     String
-  unidad       Unidad      @relation(fields: [unidadId], references: [id])
-  choferId     String
-  chofer       Chofer      @relation(fields: [choferId], references: [id])
-  citacion     String?
-  numeroViaje  String?
-  estado       EstadoViaje @default(PRECARGA)
+  id            String      @id @default(uuid())
+  fecha         DateTime
+  plantaId      String
+  planta        Planta      @relation(fields: [plantaId], references: [id])
+  unidadId      String?
+  unidad        Unidad?     @relation(fields: [unidadId], references: [id])
+  choferId      String?
+  chofer        Chofer?     @relation(fields: [choferId], references: [id])
+  citacion      String?
+  numeroViaje   String?
+  estado        EstadoViaje @default(PRECARGA)
   asignadoPorId String?
-  asignadoPor  Usuario?    @relation("AsignadoPor", fields: [asignadoPorId], references: [id])
+  asignadoPor   Usuario?    @relation("AsignadoPor", fields: [asignadoPorId], references: [id])
 
   rendicion Rendicion?
 }
