@@ -31,7 +31,7 @@ export default auth((req) => {
   // Configuracion / administracion de usuarios: solo ADMIN
   if (pathname.startsWith("/configuracion") || pathname.startsWith("/api/admin")) {
     if (nivelAcceso !== "ADMIN") {
-      return NextResponse.redirect(new URL("/panel", req.nextUrl.origin));
+      return NextResponse.redirect(new URL("/", req.nextUrl.origin));
     }
     return NextResponse.next();
   }
@@ -42,7 +42,7 @@ export default auth((req) => {
     const nivel = nivelEnModulo(nivelAcceso, permisos, modulo);
 
     if (nivel === "SIN_ACCESO") {
-      return NextResponse.redirect(new URL("/panel", req.nextUrl.origin));
+      return NextResponse.redirect(new URL("/", req.nextUrl.origin));
     }
 
     if (nivel === "LECTURA" && WRITE_METHODS.includes(req.method)) {
