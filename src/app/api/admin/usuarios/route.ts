@@ -62,8 +62,8 @@ export async function POST(req: Request) {
         nivelAcceso === "USUARIO" && Array.isArray(permisos)
           ? {
               create: permisos.map((p: { modulo: string; nivel: string }) => ({
-                modulo: p.modulo,
-                nivel: p.nivel,
+                modulo: p.modulo as any,
+                nivel: p.nivel as any,
               })),
             }
           : undefined,
