@@ -1,13 +1,15 @@
 // src/lib/auth.ts
+// Version completa: se usa en API routes, server components, etc (runtime Node, no Edge).
+// Aca SI se puede usar Prisma y bcrypt.
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
+import { authConfig } from "@/lib/auth.config";
 import type { PermisosMap } from "@/lib/permisos";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
-  session: { strategy: "jwt" },
-  pages: { signIn: "/login" },
+  ...authConfig,
   providers: [
     Credentials({
       credentials: {
@@ -47,6 +49,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     }),
   ],
   callbacks: {
+    ...authConfig.callbacks,
     async jwt({ token, user }) {
       if (user) {
         token.rolFuncional = (user as any).rolFuncional;
@@ -54,15 +57,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         token.permisos = (user as any).permisos;
       }
       return token;
-    },
-    async session({ session, token }) {
-      if (session.user) {
-        (session.user as any).id = token.sub;
-        (session.user as any).rolFuncional = token.rolFuncional;
-        (session.user as any).nivelAcceso = token.nivelAcceso;
-        (session.user as any).permisos = token.permisos;
-      }
-      return session;
     },
   },
 });
