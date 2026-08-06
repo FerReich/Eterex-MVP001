@@ -179,5 +179,6 @@ model CodigoRendicion {
   plantaId      String
   planta        Planta      @relation(fields: [plantaId], references: [id])
   fechaEnvioAga DateTime?
+  createdAt     DateTime    @default(now())
   rendiciones   Rendicion[]
 }
