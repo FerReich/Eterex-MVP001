@@ -150,7 +150,9 @@ model Viaje {
   estado        EstadoViaje @default(PRECARGA)
   asignadoPorId String?
   asignadoPor   Usuario?    @relation("AsignadoPor", fields: [asignadoPorId], references: [id])
-
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+ 
   rendicion Rendicion?
 }
 
