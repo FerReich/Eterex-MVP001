@@ -1,5 +1,5 @@
 // Schema del MVP - Modulo Distribucion BASF + Planning
-// Basado en el proceso actual (Excel/Sheets) relevado en la presentacion del cliente.
+// Actualizado: administracion de perfiles (nivel de acceso + permisos por modulo)
 
 generator client {
   provider = "prisma-client-js"
@@ -10,10 +10,34 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum Rol {
-  ADMIN
+// Rol funcional: a que "area" de trabajo pertenece el usuario (se mantiene igual que antes)
+enum RolFuncional {
   PLANIFICADOR
   RENDICION
+}
+
+// Nivel de acceso: separado del rol funcional.
+// ADMIN: control total + administra usuarios. Ignora la tabla de permisos por modulo.
+// USUARIO: su acceso a cada modulo depende de PermisoModulo.
+enum NivelAcceso {
+  ADMIN
+  USUARIO
+}
+
+// Modulos de la app que se pueden restringir individualmente
+enum Modulo {
+  DISPONIBILIDAD
+  VIAJES
+  PLANNING
+  RENDICIONES
+  CIERRE_FACTURACION
+}
+
+// Nivel de permiso que un Usuario (no admin) tiene sobre un modulo puntual
+enum NivelPermiso {
+  SIN_ACCESO
+  LECTURA
+  ESCRITURA
 }
 
 enum EstadoDisponibilidad {
@@ -38,15 +62,34 @@ enum StatusRendicion {
 }
 
 model Usuario {
-  id            String   @id @default(uuid())
+  id            String       @id @default(uuid())
   nombre        String
-  email         String   @unique
+  email         String       @unique
   passwordHash  String
-  rol           Rol      @default(PLANIFICADOR)
-  activo        Boolean  @default(true)
-  createdAt     DateTime @default(now())
+  rolFuncional  RolFuncional @default(PLANIFICADOR)
+  nivelAcceso   NivelAcceso  @default(USUARIO)
+  activo        Boolean      @default(true)
+  createdAt     DateTime     @default(now())
 
-  viajesAsignados Viaje[] @relation("AsignadoPor")
+  // Quien creo este usuario (trazabilidad: solo un ADMIN puede crear usuarios)
+  creadoPorId   String?
+  creadoPor     Usuario?     @relation("CreadoPor", fields: [creadoPorId], references: [id])
+  usuariosCreados Usuario[]  @relation("CreadoPor")
+
+  permisos        PermisoModulo[]
+  viajesAsignados Viaje[]         @relation("AsignadoPor")
+}
+
+// Permiso puntual de un Usuario (nivelAcceso = USUARIO) sobre un modulo.
+// Si no existe fila para un modulo, se interpreta como SIN_ACCESO.
+model PermisoModulo {
+  id        String       @id @default(uuid())
+  usuarioId String
+  usuario   Usuario      @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  modulo    Modulo
+  nivel     NivelPermiso @default(SIN_ACCESO)
+
+  @@unique([usuarioId, modulo])
 }
 
 model Planta {
@@ -54,71 +97,61 @@ model Planta {
   nombre String @unique
   codigo String @unique
 
-  disponibilidades  Disponibilidad[]
-  viajes            Viaje[]
-  codigosRendicion  CodigoRendicion[]
+  disponibilidades Disponibilidad[]
+  viajes           Viaje[]
+  codigosRendicion CodigoRendicion[]
 }
 
 model Chofer {
-  id        String   @id @default(uuid())
-  nombre    String
-  licencia  String?
-  telefono  String?
-  activo    Boolean  @default(true)
+  id       String  @id @default(uuid())
+  nombre   String
+  licencia String?
+  telefono String?
+  activo   Boolean @default(true)
 
   disponibilidades Disponibilidad[]
   viajes           Viaje[]
 }
 
 model Unidad {
-  id        String   @id @default(uuid())
-  patente   String   @unique
-  tipo      String
-  activa    Boolean  @default(true)
+  id      String  @id @default(uuid())
+  patente String  @unique
+  tipo    String
+  activa  Boolean @default(true)
 
   disponibilidades Disponibilidad[]
   viajes           Viaje[]
 }
 
-// Disponibilidad diaria que se ofrece al cliente antes de las 10hs
 model Disponibilidad {
-  id        String                @id @default(uuid())
-  fecha     DateTime
-  plantaId  String
-  planta    Planta                @relation(fields: [plantaId], references: [id])
-  unidadId  String
-  unidad    Unidad                @relation(fields: [unidadId], references: [id])
-  choferId  String
-  chofer    Chofer                @relation(fields: [choferId], references: [id])
-  horario   String
-  estado    EstadoDisponibilidad  @default(DISPONIBLE)
-  createdAt DateTime              @default(now())
-
-  @@index([fecha, plantaId])
+  id       String               @id @default(uuid())
+  fecha    DateTime
+  plantaId String
+  planta   Planta               @relation(fields: [plantaId], references: [id])
+  unidadId String
+  unidad   Unidad               @relation(fields: [unidadId], references: [id])
+  choferId String
+  chofer   Chofer               @relation(fields: [choferId], references: [id])
+  horario  String
+  estado   EstadoDisponibilidad @default(DISPONIBLE)
 }
 
-// Viaje: nace de la respuesta del cliente (import/carga manual), se asigna chofer/unidad,
-// y al finalizar dispara la rendicion.
 model Viaje {
-  id            String      @id @default(uuid())
-  fecha         DateTime
-  plantaId      String
-  planta        Planta      @relation(fields: [plantaId], references: [id])
-  unidadId      String?
-  unidad        Unidad?     @relation(fields: [unidadId], references: [id])
-  choferId      String?
-  chofer        Chofer?     @relation(fields: [choferId], references: [id])
-  citacion      String?
-  numeroViaje   String?     @unique
-  estado        EstadoViaje @default(PRECARGA)
+  id           String      @id @default(uuid())
+  fecha        DateTime
+  plantaId     String
+  planta       Planta      @relation(fields: [plantaId], references: [id])
+  unidadId     String
+  unidad       Unidad      @relation(fields: [unidadId], references: [id])
+  choferId     String
+  chofer       Chofer      @relation(fields: [choferId], references: [id])
+  citacion     String?
+  numeroViaje  String?
+  estado       EstadoViaje @default(PRECARGA)
   asignadoPorId String?
-  asignadoPor   Usuario?    @relation("AsignadoPor", fields: [asignadoPorId], references: [id])
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
+  asignadoPor  Usuario?    @relation("AsignadoPor", fields: [asignadoPorId], references: [id])
 
-  rendicion     Rendicion?
-
-  @@index([fecha, plantaId, estado])
+  rendicion Rendicion?
 }
 
 model Rendicion {
@@ -140,14 +173,11 @@ model Rendicion {
   createdAt           DateTime        @default(now())
 }
 
-// Rotulo que agrupa entre 10 y 20 HR rendidas, por planta, para el envio semanal a AGA
 model CodigoRendicion {
-  id              String      @id @default(uuid())
-  codigo          String      @unique
-  plantaId        String
-  planta          Planta      @relation(fields: [plantaId], references: [id])
-  fechaEnvioAga   DateTime?
-  createdAt       DateTime    @default(now())
-
-  rendiciones     Rendicion[]
+  id            String      @id @default(uuid())
+  codigo        String
+  plantaId      String
+  planta        Planta      @relation(fields: [plantaId], references: [id])
+  fechaEnvioAga DateTime?
+  rendiciones   Rendicion[]
 }
